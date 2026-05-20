@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservent | Autenticación Premium</title>
+    <!-- Modern Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Background Animated Orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="container">
+        <!-- Logo Header -->
+        <div class="brand">
+            <h1 class="logo-text">Reservent<span class="dot">.</span></h1>
+            <p class="subtitle">Gestión de eventos premium</p>
+        </div>
+
+        <!-- Auth Card (Glassmorphism) -->
+        <div class="auth-card" id="authCard">
+            <!-- Notification Toast -->
+            <div id="notification" class="notification hidden">
+                <span id="notifMessage"></span>
+            </div>
+
+            <!-- Login View -->
+            <div id="loginView" class="view-section active">
+                <h2>Iniciar Sesión</h2>
+                <p class="view-desc">Accede a tu cuenta para gestionar tus eventos.</p>
+                <form id="loginForm" class="auth-form">
+                    <div class="input-group">
+                        <label for="loginEmail">Correo Electrónico</label>
+                        <input type="email" id="loginEmail" placeholder="ejemplo@unal.edu.co" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="loginPassword">Contraseña</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-primary" id="loginBtn">Entrar al Sistema</button>
+                </form>
+                <p class="switch-view">¿No tienes cuenta? <a href="#" id="toRegister">Regístrate aquí</a></p>
+            </div>
+
+            <!-- Register View -->
+            <div id="registerView" class="view-section hidden">
+                <h2>Crear Cuenta</h2>
+                <p class="view-desc">Únete a Reservent y descubre nuevos eventos.</p>
+                <form id="registerForm" class="auth-form">
+                    <div class="input-group">
+                        <label for="regName">Nombre Completo</label>
+                        <input type="text" id="regName" placeholder="Juan Pérez" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="regEmail">Correo Electrónico</label>
+                        <input type="email" id="regEmail" placeholder="ejemplo@unal.edu.co" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="regPassword">Contraseña</label>
+                        <input type="password" id="regPassword" placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="regConfirm">Confirmar Contraseña</label>
+                        <input type="password" id="regConfirm" placeholder="Repite tu contraseña" required>
+                    </div>
+                    <button type="submit" class="btn-primary" id="registerBtn">Registrarse</button>
+                </form>
+                <p class="switch-view">¿Ya tienes cuenta? <a href="#" id="toLogin">Inicia sesión</a></p>
+            </div>
+            
+            <!-- Dashboard View (After Login) -->
+            <div id="dashboardView" class="view-section hidden">
+                <div class="success-icon">✨</div>
+                <h2>¡Bienvenido!</h2>
+                <div class="user-card">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <div class="user-info">
+                        <h3 id="dashName">Cargando...</h3>
+                        <p id="dashEmail">...</p>
+                        <span class="badge" id="dashRole">User</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-outline" id="logoutBtn">Cerrar Sesión</button>
+            </div>
+            
+            <!-- Loader -->
+            <div id="loaderOverlay" class="loader-overlay hidden">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
