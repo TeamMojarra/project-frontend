@@ -1,9 +1,9 @@
 import Input from "./Input";
 
-export default function CreateEventForm({ form, onForm, onSubmit }) {
+export default function CreateEventForm({ form, isEditing, onCancelEdit, onForm, onSubmit }) {
   return (
     <form className="panel form-card" onSubmit={onSubmit}>
-      <h2>Crear evento</h2>
+      <h2>{isEditing ? "Editar evento" : "Crear evento"}</h2>
       <Input label="Nombre" value={form.name} onChange={(name) => onForm({ ...form, name })} />
       <label>
         Descripción
@@ -30,7 +30,19 @@ export default function CreateEventForm({ form, onForm, onSubmit }) {
       <Input label="Inicio" type="datetime-local" value={form.start_datetime} onChange={(start_datetime) => onForm({ ...form, start_datetime })} />
       <Input label="Fin" type="datetime-local" value={form.end_datetime} onChange={(end_datetime) => onForm({ ...form, end_datetime })} required={false} />
       <Input label="Capacidad" type="number" value={form.total_capacity} onChange={(total_capacity) => onForm({ ...form, total_capacity })} />
-      <button className="primary" type="submit">Publicar</button>
+      {isEditing && (
+        <label>
+          Estado
+          <select value={form.status} onChange={(event) => onForm({ ...form, status: event.target.value })}>
+            <option value="available">Disponible</option>
+            <option value="sold_out">Agotado</option>
+            <option value="finished">Finalizado</option>
+            <option value="cancelled">Cancelado</option>
+          </select>
+        </label>
+      )}
+      <button className="primary" type="submit">{isEditing ? "Guardar cambios" : "Publicar"}</button>
+      {isEditing && <button className="link-button" onClick={onCancelEdit} type="button">Cancelar edición</button>}
     </form>
   );
 }

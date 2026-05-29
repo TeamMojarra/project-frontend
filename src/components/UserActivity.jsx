@@ -9,6 +9,7 @@ export default function UserActivity({ reservations, tickets }) {
           <span key={ticket.id}>{ticket.ticket_code}</span>
         ))}
       </div>
+      {tickets.length === 0 && <p className="muted">Aún no tienes tickets.</p>}
     </article>
   );
 }

@@ -1,9 +1,18 @@
-export default function MyEvents({ events }) {
+export default function MyEvents({ events, onCancel, onEdit }) {
   return (
     <article className="panel compact-panel">
       <h2>Mis eventos</h2>
       {events.map((event) => (
-        <p key={event.id}>{event.name}</p>
+        <div className="owned-event" key={event.id}>
+          <div>
+            <strong>{event.name}</strong>
+            <p>{event.status} · {event.available_capacity}/{event.total_capacity} cupos</p>
+          </div>
+          <div className="event-actions">
+            <button onClick={() => onEdit(event)} type="button">Editar</button>
+            <button onClick={() => onCancel(event.id)} type="button">Cancelar</button>
+          </div>
+        </div>
       ))}
       {events.length === 0 && <p className="muted">No has creado eventos todavía.</p>}
     </article>

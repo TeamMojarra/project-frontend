@@ -10,6 +10,7 @@ import Notice from "./components/Notice";
 import UserActivity from "./components/UserActivity";
 import ValidatorForm from "./components/ValidatorForm";
 import { EMPTY_EVENT, EMPTY_LOGIN, EMPTY_REGISTER } from "./constants";
+import { toDateTimeLocal } from "./utils/formatters";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -21,6 +22,7 @@ export default function App() {
   const [loginForm, setLoginForm] = useState(EMPTY_LOGIN);
   const [registerForm, setRegisterForm] = useState(EMPTY_REGISTER);
   const [eventForm, setEventForm] = useState(EMPTY_EVENT);
+  const [editingEventId, setEditingEventId] = useState(null);
   const [ticketCode, setTicketCode] = useState("");
   const [notice, setNotice] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -131,24 +133,52 @@ export default function App() {
 
   async function handleCreateEvent(event) {
     event.preventDefault();
+    const eventData = buildEventPayload(eventForm, Boolean(editingEventId));
     const data = await run(
       () =>
-        apiRequest("/events", {
-          method: "POST",
-          body: JSON.stringify({
-            ...eventForm,
-            start_datetime: new Date(eventForm.start_datetime).toISOString(),
-            end_datetime: eventForm.end_datetime ? new Date(eventForm.end_datetime).toISOString() : null,
-            total_capacity: Number(eventForm.total_capacity),
-          }),
+        apiRequest(editingEventId ? `/events/${editingEventId}` : "/events", {
+          method: editingEventId ? "PUT" : "POST",
+          body: JSON.stringify(eventData),
         }),
-      "Evento creado",
+      editingEventId ? "Evento actualizado" : "Evento creado",
     );
 
     if (data) {
       setEventForm(EMPTY_EVENT);
+      setEditingEventId(null);
       loadEvents();
     }
+  }
+
+  async function cancelEvent(eventId) {
+    const data = await run(
+      () => apiRequest(`/events/${eventId}`, { method: "DELETE" }),
+      "Evento cancelado",
+    );
+
+    if (data) {
+      loadEvents();
+    }
+  }
+
+  function startEditingEvent(event) {
+    setEditingEventId(event.id);
+    setEventForm({
+      name: event.name,
+      description: event.description || "",
+      event_type: event.event_type,
+      modality: event.modality,
+      location: event.location || "",
+      start_datetime: toDateTimeLocal(event.start_datetime),
+      end_datetime: toDateTimeLocal(event.end_datetime),
+      total_capacity: event.total_capacity,
+      status: event.status,
+    });
+  }
+
+  function cancelEditingEvent() {
+    setEditingEventId(null);
+    setEventForm(EMPTY_EVENT);
   }
 
   async function reserveEvent(eventId) {
@@ -194,6 +224,17 @@ export default function App() {
   }
 
   const myEvents = user ? events.filter((event) => event.created_by === user.id) : [];
+  const mainContent = getMainContent({
+    activeView,
+    events,
+    myEvents,
+    reservations,
+    tickets,
+    user,
+    onCancelEvent: cancelEvent,
+    onEditEvent: startEditingEvent,
+    onReserve: reserveEvent,
+  });
 
   return (
     <main className="app-shell">
@@ -223,17 +264,49 @@ export default function App() {
       <Notice notice={notice} loading={loading} />
 
       <section className="content-grid">
-        <EventsSection events={events} user={user} onReserve={reserveEvent} />
+        {mainContent}
 
         {user && (
           <aside className="side-stack">
-            <CreateEventForm form={eventForm} onForm={setEventForm} onSubmit={handleCreateEvent} />
+            <CreateEventForm
+              form={eventForm}
+              isEditing={Boolean(editingEventId)}
+              onCancelEdit={cancelEditingEvent}
+              onForm={setEventForm}
+              onSubmit={handleCreateEvent}
+            />
             <UserActivity reservations={reservations} tickets={tickets} />
             <ValidatorForm ticketCode={ticketCode} onTicketCode={setTicketCode} onSubmit={validateTicket} />
-            <MyEvents events={myEvents} />
+            <MyEvents events={myEvents} onCancel={cancelEvent} onEdit={startEditingEvent} />
           </aside>
         )}
       </section>
     </main>
   );
+}
+
+function buildEventPayload(form, includeStatus) {
+  return {
+    name: form.name,
+    description: form.description,
+    event_type: form.event_type,
+    modality: form.modality,
+    location: form.location,
+    start_datetime: new Date(form.start_datetime).toISOString(),
+    end_datetime: form.end_datetime ? new Date(form.end_datetime).toISOString() : null,
+    total_capacity: Number(form.total_capacity),
+    ...(includeStatus ? { status: form.status } : {}),
+  };
+}
+
+function getMainContent({ activeView, events, myEvents, reservations, tickets, user, onCancelEvent, onEditEvent, onReserve }) {
+  if (activeView === "my-events" && user) {
+    return <MyEvents events={myEvents} onCancel={onCancelEvent} onEdit={onEditEvent} />;
+  }
+
+  if (activeView === "tickets" && user) {
+    return <UserActivity reservations={reservations} tickets={tickets} />;
+  }
+
+  return <EventsSection events={events} user={user} onReserve={onReserve} />;
 }

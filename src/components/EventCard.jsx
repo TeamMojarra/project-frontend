@@ -1,6 +1,8 @@
 import { formatDate } from "../utils/formatters";
 
 export default function EventCard({ event, user, onReserve }) {
+  const isOwner = user?.id === event.created_by;
+
   return (
     <article className="event-card">
       <div>
@@ -22,9 +24,13 @@ export default function EventCard({ event, user, onReserve }) {
           <dd>{event.available_capacity}/{event.total_capacity}</dd>
         </div>
       </dl>
-      <button disabled={!user || event.available_capacity < 1} onClick={() => onReserve(event.id)} type="button">
-        {user ? "Reservar" : "Inicia sesión para reservar"}
-      </button>
+      {isOwner ? (
+        <button disabled type="button">Tu evento</button>
+      ) : (
+        <button disabled={!user || event.available_capacity < 1} onClick={() => onReserve(event.id)} type="button">
+          {user ? "Reservar" : "Inicia sesión para reservar"}
+        </button>
+      )}
     </article>
   );
 }

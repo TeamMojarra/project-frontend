@@ -333,6 +333,26 @@ label {
   font-size: 0.78rem;
 }
 
+.owned-event {
+  display: grid;
+  gap: 0.8rem;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 1rem;
+  padding: 0.9rem;
+  background: rgba(8, 13, 25, 0.48);
+}
+
+.owned-event p {
+  margin: 0.25rem 0 0;
+  color: #94a3b8;
+}
+
+.event-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .empty-state {
   margin: 0;
   padding: 2rem;

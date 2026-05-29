@@ -16,4 +16,5 @@ export const EMPTY_EVENT = {
   start_datetime: "",
   end_datetime: "",
   total_capacity: 30,
+  status: "available",
 };
