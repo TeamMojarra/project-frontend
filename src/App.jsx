@@ -226,6 +226,8 @@ export default function App() {
   }
 
   const myEvents = user ? events.filter((event) => event.created_by === user.id) : [];
+  const activeTickets = tickets.filter((ticket) => ticket.status === "active").length;
+  const viewTitle = getViewTitle(activeView);
   const mainContent = getMainContent({
     activeView,
     events,
@@ -246,44 +248,70 @@ export default function App() {
     ticketCode,
   });
 
+  if (!user) {
+    return (
+      <main className="auth-shell">
+        <div className="ambient-orb orb-one" />
+        <div className="ambient-orb orb-two" />
+        <section className="auth-layout">
+          <div className="brand-panel">
+            <p className="eyebrow">Reservent</p>
+            <h1>Gestión de eventos premium y tickets digitales</h1>
+            <p>
+              Reserva cupos, confirma pagos simulados y valida accesos con códigos únicos desde una plataforma centralizada.
+            </p>
+          </div>
+          <AuthPanel
+            user={user}
+            authMode={authMode}
+            loginForm={loginForm}
+            registerForm={registerForm}
+            onAuthMode={setAuthMode}
+            onLoginForm={setLoginForm}
+            onRegisterForm={setRegisterForm}
+            onLogin={handleLogin}
+            onRegister={handleRegister}
+          />
+        </section>
+        <Notice notice={notice} loading={loading} />
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <Header user={user} activeView={activeView} onView={setActiveView} onLogout={handleLogout} />
 
-      <section className="hero">
-        <div>
-          <p className="eyebrow">Reservent</p>
-          <h1>Gestiona eventos y tickets digitales en un solo lugar.</h1>
-          <p className="hero-copy">
-            Publica eventos, controla cupos, confirma reservas y valida accesos con códigos únicos.
-          </p>
-          {user && (
-            <div className="hero-actions">
-              <button className="primary" onClick={() => setActiveView("create")} type="button">Crear evento</button>
-              <button onClick={() => setActiveView("tickets")} type="button">Ver tickets</button>
-            </div>
-          )}
-        </div>
-        <AuthPanel
-          user={user}
-          authMode={authMode}
-          loginForm={loginForm}
-          registerForm={registerForm}
-          onAuthMode={setAuthMode}
-          onLoginForm={setLoginForm}
-          onRegisterForm={setRegisterForm}
-          onLogin={handleLogin}
-          onRegister={handleRegister}
-        />
-      </section>
-
       <Notice notice={notice} loading={loading} />
+
+      <section className="app-overview">
+        <div>
+          <p className="eyebrow">Panel</p>
+          <h1>{viewTitle}</h1>
+        </div>
+        <div className="overview-metrics" aria-label="Resumen de actividad">
+          <span><strong>{events.length}</strong> eventos</span>
+          <span><strong>{myEvents.length}</strong> propios</span>
+          <span><strong>{activeTickets}</strong> tickets activos</span>
+        </div>
+      </section>
 
       <section className="workspace">
         {mainContent}
       </section>
     </main>
   );
+}
+
+function getViewTitle(activeView) {
+  const titles = {
+    create: "Crear evento",
+    "my-events": "Mis eventos",
+    tickets: "Mis tickets",
+    validate: "Validar tickets",
+  };
+
+  return titles[activeView] || "Eventos";
 }
 
 function buildEventPayload(form, includeStatus) {

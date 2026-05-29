@@ -1,5 +1,4 @@
 import Input from "./Input";
-import { getInitials } from "../utils/formatters";
 
 export default function AuthPanel({
   user,
@@ -13,15 +12,7 @@ export default function AuthPanel({
   onRegister,
 }) {
   if (user) {
-    return (
-      <article className="panel auth-summary">
-        <span className="avatar-large">{getInitials(user.name)}</span>
-        <p className="eyebrow">Sesión activa</p>
-        <h2>{user.name}</h2>
-        <p>{user.email}</p>
-        <span className="badge">{user.role}</span>
-      </article>
-    );
+    return null;
   }
 
   if (authMode === "register") {

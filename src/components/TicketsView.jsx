@@ -29,12 +29,24 @@ export default function TicketsView({ reservations, tickets }) {
       <div className="ticket-grid">
         {tickets.map((ticket) => (
           <article className="ticket-card" key={ticket.id}>
-            <div>
+            <div className="ticket-glow" />
+            <div className="ticket-header">
+              <strong>Reservent<span>.</span></strong>
               <span className={`status ${ticket.status}`}>{ticket.status}</span>
+            </div>
+            <div className="ticket-body">
+              <span className="ticket-label">ACCESO DIGITAL</span>
               <h3>{ticket.event?.name || "Evento"}</h3>
               <p>{ticket.event?.location || "Ubicación por confirmar"}</p>
             </div>
-            <div className="ticket-code">{ticket.ticket_code}</div>
+            <div className="ticket-divider"><span /></div>
+            <div className="ticket-footer">
+              <div>
+                <span className="ticket-label">CÓDIGO</span>
+                <div className="ticket-code">{ticket.ticket_code}</div>
+              </div>
+              <div className="qr-mark" aria-hidden="true" />
+            </div>
             <small>Generado {formatDate(ticket.generated_at)}</small>
           </article>
         ))}
