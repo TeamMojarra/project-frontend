@@ -7,7 +7,7 @@ import EventsSection from "./components/EventsSection";
 import Header from "./components/Header";
 import MyEvents from "./components/MyEvents";
 import Notice from "./components/Notice";
-import UserActivity from "./components/UserActivity";
+import TicketsView from "./components/TicketsView";
 import ValidatorForm from "./components/ValidatorForm";
 import { EMPTY_EVENT, EMPTY_LOGIN, EMPTY_REGISTER } from "./constants";
 import { toDateTimeLocal } from "./utils/formatters";
@@ -147,6 +147,7 @@ export default function App() {
       setEventForm(EMPTY_EVENT);
       setEditingEventId(null);
       loadEvents();
+      setActiveView("my-events");
     }
   }
 
@@ -163,6 +164,7 @@ export default function App() {
 
   function startEditingEvent(event) {
     setEditingEventId(event.id);
+    setActiveView("create");
     setEventForm({
       name: event.name,
       description: event.description || "",
@@ -227,13 +229,21 @@ export default function App() {
   const mainContent = getMainContent({
     activeView,
     events,
+    eventForm,
+    editingEventId,
     myEvents,
     reservations,
     tickets,
     user,
     onCancelEvent: cancelEvent,
+    onCancelEdit: cancelEditingEvent,
     onEditEvent: startEditingEvent,
+    onEventForm: setEventForm,
+    onEventSubmit: handleCreateEvent,
     onReserve: reserveEvent,
+    onTicketCode: setTicketCode,
+    onValidateTicket: validateTicket,
+    ticketCode,
   });
 
   return (
@@ -243,10 +253,16 @@ export default function App() {
       <section className="hero">
         <div>
           <p className="eyebrow">Reservent</p>
-          <h1>Eventos, reservas y tickets sin enredos.</h1>
+          <h1>Gestiona eventos y tickets digitales en un solo lugar.</h1>
           <p className="hero-copy">
-            Una interfaz React más clara para consumir la API de Reservent sin el HTML monolítico anterior.
+            Publica eventos, controla cupos, confirma reservas y valida accesos con códigos únicos.
           </p>
+          {user && (
+            <div className="hero-actions">
+              <button className="primary" onClick={() => setActiveView("create")} type="button">Crear evento</button>
+              <button onClick={() => setActiveView("tickets")} type="button">Ver tickets</button>
+            </div>
+          )}
         </div>
         <AuthPanel
           user={user}
@@ -263,23 +279,8 @@ export default function App() {
 
       <Notice notice={notice} loading={loading} />
 
-      <section className="content-grid">
+      <section className="workspace">
         {mainContent}
-
-        {user && (
-          <aside className="side-stack">
-            <CreateEventForm
-              form={eventForm}
-              isEditing={Boolean(editingEventId)}
-              onCancelEdit={cancelEditingEvent}
-              onForm={setEventForm}
-              onSubmit={handleCreateEvent}
-            />
-            <UserActivity reservations={reservations} tickets={tickets} />
-            <ValidatorForm ticketCode={ticketCode} onTicketCode={setTicketCode} onSubmit={validateTicket} />
-            <MyEvents events={myEvents} onCancel={cancelEvent} onEdit={startEditingEvent} />
-          </aside>
-        )}
       </section>
     </main>
   );
@@ -299,13 +300,47 @@ function buildEventPayload(form, includeStatus) {
   };
 }
 
-function getMainContent({ activeView, events, myEvents, reservations, tickets, user, onCancelEvent, onEditEvent, onReserve }) {
+function getMainContent({
+  activeView,
+  events,
+  eventForm,
+  editingEventId,
+  myEvents,
+  reservations,
+  tickets,
+  user,
+  onCancelEdit,
+  onCancelEvent,
+  onEditEvent,
+  onEventForm,
+  onEventSubmit,
+  onReserve,
+  onTicketCode,
+  onValidateTicket,
+  ticketCode,
+}) {
+  if (activeView === "create" && user) {
+    return (
+      <CreateEventForm
+        form={eventForm}
+        isEditing={Boolean(editingEventId)}
+        onCancelEdit={onCancelEdit}
+        onForm={onEventForm}
+        onSubmit={onEventSubmit}
+      />
+    );
+  }
+
   if (activeView === "my-events" && user) {
     return <MyEvents events={myEvents} onCancel={onCancelEvent} onEdit={onEditEvent} />;
   }
 
   if (activeView === "tickets" && user) {
-    return <UserActivity reservations={reservations} tickets={tickets} />;
+    return <TicketsView reservations={reservations} tickets={tickets} />;
+  }
+
+  if (activeView === "validate" && user) {
+    return <ValidatorForm ticketCode={ticketCode} onTicketCode={onTicketCode} onSubmit={onValidateTicket} />;
   }
 
   return <EventsSection events={events} user={user} onReserve={onReserve} />;

@@ -1,7 +1,13 @@
 export default function MyEvents({ events, onCancel, onEdit }) {
   return (
-    <article className="panel compact-panel">
-      <h2>Mis eventos</h2>
+    <article className="panel view-panel compact-panel">
+      <div className="section-title">
+        <div>
+          <p className="eyebrow">Organización</p>
+          <h2>Mis eventos</h2>
+        </div>
+        <span>{events.length} creados</span>
+      </div>
       {events.map((event) => (
         <div className="owned-event" key={event.id}>
           <div>

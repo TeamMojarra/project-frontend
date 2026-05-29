@@ -11,6 +11,11 @@ export default function Header({ user, activeView, onView, onLogout }) {
           Eventos
         </button>
         {user && (
+          <button className={activeView === "create" ? "active" : ""} onClick={() => onView("create")} type="button">
+            Crear evento
+          </button>
+        )}
+        {user && (
           <button className={activeView === "my-events" ? "active" : ""} onClick={() => onView("my-events")} type="button">
             Mis eventos
           </button>
@@ -18,6 +23,11 @@ export default function Header({ user, activeView, onView, onLogout }) {
         {user && (
           <button className={activeView === "tickets" ? "active" : ""} onClick={() => onView("tickets")} type="button">
             Mis tickets
+          </button>
+        )}
+        {user && (
+          <button className={activeView === "validate" ? "active" : ""} onClick={() => onView("validate")} type="button">
+            Validar
           </button>
         )}
       </nav>

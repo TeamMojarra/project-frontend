@@ -16,6 +16,7 @@ export default function AuthPanel({
     return (
       <article className="panel auth-summary">
         <span className="avatar-large">{getInitials(user.name)}</span>
+        <p className="eyebrow">Sesión activa</p>
         <h2>{user.name}</h2>
         <p>{user.email}</p>
         <span className="badge">{user.role}</span>

@@ -2,7 +2,7 @@ import EventCard from "./EventCard";
 
 export default function EventsSection({ events, user, onReserve }) {
   return (
-    <section className="panel events-panel">
+    <section className="panel view-panel events-panel">
       <div className="section-title">
         <div>
           <p className="eyebrow">Explorar</p>

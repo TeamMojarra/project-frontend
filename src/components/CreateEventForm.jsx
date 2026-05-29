@@ -2,7 +2,7 @@ import Input from "./Input";
 
 export default function CreateEventForm({ form, isEditing, onCancelEdit, onForm, onSubmit }) {
   return (
-    <form className="panel form-card" onSubmit={onSubmit}>
+    <form className="panel form-card view-panel" onSubmit={onSubmit}>
       <h2>{isEditing ? "Editar evento" : "Crear evento"}</h2>
       <Input label="Nombre" value={form.name} onChange={(name) => onForm({ ...form, name })} />
       <label>
