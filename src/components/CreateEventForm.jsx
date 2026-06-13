@@ -1,43 +1,67 @@
 import Input from "./Input";
+import { EVENT_STATUS_OPTIONS, EVENT_TYPE_OPTIONS, MODALITY_OPTIONS } from "../utils/labels";
 
 export default function CreateEventForm({ form, isEditing, onCancelEdit, onForm, onSubmit }) {
+  const isService = form.event_type === "service";
+
   return (
     <form className="panel form-card view-panel" onSubmit={onSubmit}>
-      <h2>{isEditing ? "Editar evento" : "Crear evento"}</h2>
-      <Input label="Nombre" value={form.name} onChange={(name) => onForm({ ...form, name })} />
+      <div>
+        <p className="eyebrow">Organización</p>
+        <h2>{isEditing ? "Editar evento" : "Crear evento"}</h2>
+        <p className="form-intro">Define la información que verán tus asistentes antes de reservar.</p>
+      </div>
+      <Input label="Nombre" helper="Usa un nombre concreto y reconocible." value={form.name} onChange={(name) => onForm({ ...form, name })} />
+      <Input
+        helper="Pega una URL pública https:// para reemplazar la imagen genérica."
+        label="Imagen del evento"
+        placeholder="https://images.unsplash.com/..."
+        required={false}
+        type="url"
+        value={form.image_url}
+        onChange={(image_url) => onForm({ ...form, image_url })}
+      />
       <label>
-        Descripción
+        <span>Descripción</span>
         <textarea value={form.description} onChange={(event) => onForm({ ...form, description: event.target.value })} />
+        <small>Explica la experiencia, requisitos o beneficios principales.</small>
       </label>
       <div className="form-row">
         <label>
-          Tipo
+          <span>Tipo</span>
           <select value={form.event_type} onChange={(event) => onForm({ ...form, event_type: event.target.value })}>
-            <option value="event">Evento</option>
-            <option value="service">Servicio</option>
+            {EVENT_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
           </select>
         </label>
         <label>
-          Modalidad
+          <span>Modalidad</span>
           <select value={form.modality} onChange={(event) => onForm({ ...form, modality: event.target.value })}>
-            <option value="presencial">Presencial</option>
-            <option value="virtual">Virtual</option>
-            <option value="hibrido">Híbrido</option>
+            {MODALITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
           </select>
         </label>
       </div>
       <Input label="Lugar" value={form.location} onChange={(location) => onForm({ ...form, location })} />
-      <Input label="Inicio" type="datetime-local" value={form.start_datetime} onChange={(start_datetime) => onForm({ ...form, start_datetime })} />
+      <Input
+        helper={isService ? "Opcional: deja vacío si el servicio no tiene una fecha definida." : "Obligatorio para eventos con fecha."}
+        label={isService ? "Inicio opcional" : "Inicio"}
+        required={!isService}
+        type="datetime-local"
+        value={form.start_datetime}
+        onChange={(start_datetime) => onForm({ ...form, start_datetime })}
+      />
       <Input label="Fin" type="datetime-local" value={form.end_datetime} onChange={(end_datetime) => onForm({ ...form, end_datetime })} required={false} />
-      <Input label="Capacidad" type="number" value={form.total_capacity} onChange={(total_capacity) => onForm({ ...form, total_capacity })} />
+      <Input helper="Debe ser mayor a cero." label="Capacidad" min="1" type="number" value={form.total_capacity} onChange={(total_capacity) => onForm({ ...form, total_capacity })} />
       {isEditing && (
         <label>
-          Estado
+          <span>Estado</span>
           <select value={form.status} onChange={(event) => onForm({ ...form, status: event.target.value })}>
-            <option value="available">Disponible</option>
-            <option value="sold_out">Agotado</option>
-            <option value="finished">Finalizado</option>
-            <option value="cancelled">Cancelado</option>
+            {EVENT_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
           </select>
         </label>
       )}

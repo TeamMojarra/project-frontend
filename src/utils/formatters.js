@@ -1,17 +1,27 @@
 export function getInitials(name) {
-  return name
+  return (name || "")
     .split(" ")
+    .filter(Boolean)
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase() || "U";
 }
 
 export function formatDate(value) {
+  if (!value) {
+    return "Fecha por confirmar";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Fecha inválida";
+  }
+
   return new Intl.DateTimeFormat("es-CO", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 

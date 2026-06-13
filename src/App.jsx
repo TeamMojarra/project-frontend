@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { apiRequest, clearToken, getToken, setToken } from "./api";
 import AuthPanel from "./components/AuthPanel";
+import CheckoutForm from "./components/CheckoutForm";
 import CreateEventForm from "./components/CreateEventForm";
 import EventsSection from "./components/EventsSection";
 import Header from "./components/Header";
@@ -9,7 +10,7 @@ import MyEvents from "./components/MyEvents";
 import Notice from "./components/Notice";
 import TicketsView from "./components/TicketsView";
 import ValidatorForm from "./components/ValidatorForm";
-import { EMPTY_EVENT, EMPTY_LOGIN, EMPTY_REGISTER } from "./constants";
+import { EMPTY_EVENT, EMPTY_LOGIN, EMPTY_PAYMENT, EMPTY_REGISTER } from "./constants";
 import { toDateTimeLocal } from "./utils/formatters";
 
 export default function App() {
@@ -22,8 +23,11 @@ export default function App() {
   const [loginForm, setLoginForm] = useState(EMPTY_LOGIN);
   const [registerForm, setRegisterForm] = useState(EMPTY_REGISTER);
   const [eventForm, setEventForm] = useState(EMPTY_EVENT);
+  const [paymentForm, setPaymentForm] = useState(EMPTY_PAYMENT);
+  const [checkout, setCheckout] = useState(null);
   const [editingEventId, setEditingEventId] = useState(null);
   const [ticketCode, setTicketCode] = useState("");
+  const [validationResult, setValidationResult] = useState(null);
   const [notice, setNotice] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,6 +37,18 @@ export default function App() {
     if (getToken()) {
       loadSession();
     }
+  }, []);
+
+  useEffect(() => {
+    function refreshOnFocus() {
+      loadEvents();
+      if (getToken()) {
+        loadPrivateData();
+      }
+    }
+
+    window.addEventListener("focus", refreshOnFocus);
+    return () => window.removeEventListener("focus", refreshOnFocus);
   }, []);
 
   async function run(action, successMessage) {
@@ -68,6 +84,7 @@ export default function App() {
     if (data) {
       setEvents(data);
     }
+    return data || [];
   }
 
   async function loadPrivateData() {
@@ -128,6 +145,9 @@ export default function App() {
     setUser(null);
     setTickets([]);
     setReservations([]);
+    setCheckout(null);
+    setPaymentForm(EMPTY_PAYMENT);
+    setValidationResult(null);
     setNotice({ type: "success", text: "Sesión cerrada" });
   }
 
@@ -171,6 +191,7 @@ export default function App() {
       event_type: event.event_type,
       modality: event.modality,
       location: event.location || "",
+      image_url: event.image_url || "",
       start_datetime: toDateTimeLocal(event.start_datetime),
       end_datetime: toDateTimeLocal(event.end_datetime),
       total_capacity: event.total_capacity,
@@ -184,6 +205,12 @@ export default function App() {
   }
 
   async function reserveEvent(eventId) {
+    if (!user) {
+      setNotice({ type: "error", text: "Inicia sesión para reservar cupos." });
+      return;
+    }
+
+    const latestEvents = await loadEvents();
     const reservation = await run(() =>
       apiRequest("/reservations", {
         method: "POST",
@@ -195,19 +222,43 @@ export default function App() {
       return;
     }
 
-    const checkout = await run(
+    const reservedEvent = latestEvents.find((event) => event.id === eventId) || reservation.event;
+    setCheckout({ reservation, event: reservedEvent });
+    setPaymentForm({ ...EMPTY_PAYMENT, holder_name: user.name });
+    setActiveView("checkout");
+    setNotice({ type: "success", text: "Reserva creada. Completa el pago simulado para generar tu ticket." });
+    loadPrivateData();
+  }
+
+  async function payCheckout(event) {
+    event.preventDefault();
+
+    if (!checkout) {
+      return;
+    }
+
+    const checkoutResult = await run(
       () =>
-        apiRequest(`/reservations/${reservation.id}/pay`, {
+        apiRequest(`/reservations/${checkout.reservation.id}/pay`, {
           method: "POST",
-          body: JSON.stringify({ holder_name: user.name }),
+          body: JSON.stringify(paymentForm),
         }),
-      "Reserva confirmada y ticket generado",
+      paymentForm.result === "approved" ? "Pago aprobado. Ticket generado." : "Pago rechazado. No se generó ticket.",
     );
 
-    if (checkout) {
+    if (checkoutResult) {
+      setCheckout(null);
+      setPaymentForm(EMPTY_PAYMENT);
       loadEvents();
       loadPrivateData();
+      setActiveView(paymentForm.result === "approved" ? "tickets" : "events");
     }
+  }
+
+  function cancelCheckout() {
+    setCheckout(null);
+    setPaymentForm(EMPTY_PAYMENT);
+    setActiveView("events");
   }
 
   async function validateTicket(event) {
@@ -219,6 +270,7 @@ export default function App() {
 
     const result = await run(() => apiRequest(`/tickets/${code}/validate`, { method: "POST" }));
     if (result) {
+      setValidationResult(result);
       setNotice({ type: result.valid ? "success" : "error", text: result.message });
       setTicketCode("");
       loadPrivateData();
@@ -232,20 +284,26 @@ export default function App() {
     activeView,
     events,
     eventForm,
+    checkout,
     editingEventId,
     myEvents,
     reservations,
     tickets,
     user,
+    paymentForm,
     onCancelEvent: cancelEvent,
+    onCancelCheckout: cancelCheckout,
     onCancelEdit: cancelEditingEvent,
     onEditEvent: startEditingEvent,
     onEventForm: setEventForm,
     onEventSubmit: handleCreateEvent,
     onReserve: reserveEvent,
+    onPaymentForm: setPaymentForm,
+    onPaymentSubmit: payCheckout,
     onTicketCode: setTicketCode,
     onValidateTicket: validateTicket,
     ticketCode,
+    validationResult,
   });
 
   if (!user) {
@@ -253,27 +311,39 @@ export default function App() {
       <main className="auth-shell">
         <div className="ambient-orb orb-one" />
         <div className="ambient-orb orb-two" />
-        <section className="auth-layout">
-          <div className="brand-panel">
-            <p className="eyebrow">Reservent</p>
-            <h1>Gestión de eventos premium y tickets digitales</h1>
-            <p>
-              Reserva cupos, confirma pagos simulados y valida accesos con códigos únicos desde una plataforma centralizada.
-            </p>
-          </div>
-          <AuthPanel
-            user={user}
-            authMode={authMode}
-            loginForm={loginForm}
-            registerForm={registerForm}
-            onAuthMode={setAuthMode}
-            onLoginForm={setLoginForm}
-            onRegisterForm={setRegisterForm}
-            onLogin={handleLogin}
-            onRegister={handleRegister}
-          />
-        </section>
-        <Notice notice={notice} loading={loading} />
+        <div className="auth-content">
+          <section className="auth-layout" aria-label="Acceso a Reservent">
+            <div className="brand-panel">
+              <p className="eyebrow">Reservent</p>
+              <h1>Reservas memorables con accesos digitales seguros</h1>
+              <p>
+                Publica eventos, controla cupos, confirma pagos simulados y valida entradas con códigos únicos desde una plataforma centralizada.
+              </p>
+              <div className="brand-metrics" aria-label="Resumen de la plataforma">
+                <span><strong>{events.length}</strong> eventos publicados</span>
+                <span><strong>QR</strong> tickets digitales</span>
+                <span><strong>24/7</strong> validación</span>
+              </div>
+            </div>
+            <div className="auth-panel-stack">
+              <AuthPanel
+                user={user}
+                authMode={authMode}
+                loginForm={loginForm}
+                registerForm={registerForm}
+                onAuthMode={setAuthMode}
+                onLoginForm={setLoginForm}
+                onRegisterForm={setRegisterForm}
+                onLogin={handleLogin}
+                onRegister={handleRegister}
+              />
+              <Notice notice={notice} loading={loading} />
+            </div>
+          </section>
+          <section className="public-events-preview" aria-label="Vista previa de eventos">
+            <EventsSection compact events={events} user={user} onReserve={reserveEvent} />
+          </section>
+        </div>
       </main>
     );
   }
@@ -296,7 +366,7 @@ export default function App() {
         </div>
       </section>
 
-      <section className="workspace">
+      <section className="workspace" id="main-content">
         {mainContent}
       </section>
     </main>
@@ -306,6 +376,7 @@ export default function App() {
 function getViewTitle(activeView) {
   const titles = {
     create: "Crear evento",
+    checkout: "Confirmar reserva",
     "my-events": "Mis eventos",
     tickets: "Mis tickets",
     validate: "Validar tickets",
@@ -318,10 +389,11 @@ function buildEventPayload(form, includeStatus) {
   return {
     name: form.name,
     description: form.description,
+    image_url: form.image_url || null,
     event_type: form.event_type,
     modality: form.modality,
     location: form.location,
-    start_datetime: new Date(form.start_datetime).toISOString(),
+    start_datetime: form.start_datetime ? new Date(form.start_datetime).toISOString() : null,
     end_datetime: form.end_datetime ? new Date(form.end_datetime).toISOString() : null,
     total_capacity: Number(form.total_capacity),
     ...(includeStatus ? { status: form.status } : {}),
@@ -332,20 +404,26 @@ function getMainContent({
   activeView,
   events,
   eventForm,
+  checkout,
   editingEventId,
   myEvents,
   reservations,
   tickets,
   user,
+  paymentForm,
+  onCancelCheckout,
   onCancelEdit,
   onCancelEvent,
   onEditEvent,
   onEventForm,
   onEventSubmit,
   onReserve,
+  onPaymentForm,
+  onPaymentSubmit,
   onTicketCode,
   onValidateTicket,
   ticketCode,
+  validationResult,
 }) {
   if (activeView === "create" && user) {
     return (
@@ -359,6 +437,18 @@ function getMainContent({
     );
   }
 
+  if (activeView === "checkout" && user) {
+    return (
+      <CheckoutForm
+        checkout={checkout}
+        form={paymentForm}
+        onCancel={onCancelCheckout}
+        onForm={onPaymentForm}
+        onSubmit={onPaymentSubmit}
+      />
+    );
+  }
+
   if (activeView === "my-events" && user) {
     return <MyEvents events={myEvents} onCancel={onCancelEvent} onEdit={onEditEvent} />;
   }
@@ -368,7 +458,7 @@ function getMainContent({
   }
 
   if (activeView === "validate" && user) {
-    return <ValidatorForm ticketCode={ticketCode} onTicketCode={onTicketCode} onSubmit={onValidateTicket} />;
+    return <ValidatorForm result={validationResult} ticketCode={ticketCode} onTicketCode={onTicketCode} onSubmit={onValidateTicket} />;
   }
 
   return <EventsSection events={events} user={user} onReserve={onReserve} />;

@@ -7,9 +7,16 @@ export const EMPTY_REGISTER = {
   confirmPassword: "",
 };
 
+export const EMPTY_PAYMENT = {
+  holder_name: "",
+  card_number: "",
+  result: "approved",
+};
+
 export const EMPTY_EVENT = {
   name: "",
   description: "",
+  image_url: "",
   event_type: "event",
   modality: "presencial",
   location: "",
