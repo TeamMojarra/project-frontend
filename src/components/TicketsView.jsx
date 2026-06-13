@@ -1,4 +1,5 @@
 import { formatDate } from "../utils/formatters";
+import { ticketStatusLabel } from "../utils/labels";
 
 export default function TicketsView({ reservations, tickets }) {
   return (
@@ -32,7 +33,7 @@ export default function TicketsView({ reservations, tickets }) {
             <div className="ticket-glow" />
             <div className="ticket-header">
               <strong>Reservent<span>.</span></strong>
-              <span className={`status ${ticket.status}`}>{ticket.status}</span>
+              <span className={`status ${ticket.status}`}>{ticketStatusLabel(ticket.status)}</span>
             </div>
             <div className="ticket-body">
               <span className="ticket-label">ACCESO DIGITAL</span>
@@ -45,12 +46,22 @@ export default function TicketsView({ reservations, tickets }) {
                 <span className="ticket-label">CÓDIGO</span>
                 <div className="ticket-code">{ticket.ticket_code}</div>
               </div>
-              <div className="qr-mark" aria-hidden="true" />
+              <button
+                aria-label={`Copiar código ${ticket.ticket_code}`}
+                className="qr-mark"
+                onClick={() => navigator.clipboard?.writeText(ticket.ticket_code)}
+                type="button"
+              />
             </div>
             <small>Generado {formatDate(ticket.generated_at)}</small>
           </article>
         ))}
-        {tickets.length === 0 && <p className="empty-state">Todavía no tienes tickets generados.</p>}
+        {tickets.length === 0 && (
+          <div className="empty-state empty-card">
+            <strong>Todavía no tienes tickets generados.</strong>
+            <span>Reserva un evento y confirma el pago simulado para ver tu acceso digital aquí.</span>
+          </div>
+        )}
       </div>
     </section>
   );
