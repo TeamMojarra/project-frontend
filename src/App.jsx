@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 
 import { apiRequest, clearToken, getToken, setToken } from "./api";
 import AuthPanel from "./components/AuthPanel";
@@ -31,20 +31,28 @@ export default function App() {
   const [notice, setNotice] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const loadInitialData = useEffectEvent(() => {
     loadEvents();
 
     if (getToken()) {
       loadSession();
     }
+  });
+
+  const refreshDataOnFocus = useEffectEvent(() => {
+    loadEvents();
+    if (getToken()) {
+      loadPrivateData();
+    }
+  });
+
+  useEffect(() => {
+    loadInitialData();
   }, []);
 
   useEffect(() => {
     function refreshOnFocus() {
-      loadEvents();
-      if (getToken()) {
-        loadPrivateData();
-      }
+      refreshDataOnFocus();
     }
 
     window.addEventListener("focus", refreshOnFocus);
