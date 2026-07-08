@@ -7,7 +7,8 @@ export default function EventsSection({ compact = false, events, user, onReserve
   const [query, setQuery] = useState("");
   const [modality, setModality] = useState("all");
   const normalizedQuery = query.trim().toLowerCase();
-  const visibleEvents = events.filter((event) => {
+  const publicEvents = events.filter((event) => event.status !== "cancelled");
+  const visibleEvents = publicEvents.filter((event) => {
     const matchesQuery = [event.name, event.description, event.location]
       .filter(Boolean)
       .some((value) => value.toLowerCase().includes(normalizedQuery));
@@ -23,7 +24,7 @@ export default function EventsSection({ compact = false, events, user, onReserve
           <h2>Eventos</h2>
           <p className="view-copy">Encuentra experiencias disponibles, revisa cupos en tiempo real y reserva cuando inicies sesión.</p>
         </div>
-        <span>{visibleEvents.length} de {events.length} publicados</span>
+        <span>{visibleEvents.length} de {publicEvents.length} publicados</span>
       </div>
       <div className="event-toolbar">
         <input
