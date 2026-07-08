@@ -10,6 +10,8 @@ export const EMPTY_REGISTER = {
 export const EMPTY_PAYMENT = {
   holder_name: "",
   card_number: "",
+  expiry_date: "",
+  cvc: "",
   result: "approved",
 };
 
@@ -23,5 +25,6 @@ export const EMPTY_EVENT = {
   start_datetime: "",
   end_datetime: "",
   total_capacity: 30,
+  max_tickets_per_purchase: 1,
   status: "available",
 };

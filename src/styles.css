@@ -71,6 +71,11 @@ textarea {
   font: inherit;
 }
 
+select option {
+  color: #f8fafc;
+  background: #0b0d18;
+}
+
 button {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
@@ -321,8 +326,30 @@ label {
   padding: clamp(1.4rem, 2.5vw, 2rem);
 }
 
-.checkout-panel {
-  max-width: 720px;
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.78fr) minmax(0, 1.22fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.checkout-panel,
+.checkout-side-card {
+  min-height: auto;
+}
+
+.checkout-side-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.45rem;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(6, 182, 212, 0.16), transparent 12rem),
+    var(--surface-soft);
+}
+
+.checkout-side-card h2 {
+  margin: 0;
+  letter-spacing: -0.04em;
 }
 
 .checkout-summary {
@@ -338,6 +365,122 @@ label {
 
 .checkout-summary strong {
   color: var(--text);
+}
+
+.payment-timer {
+  display: grid;
+  gap: 0.2rem;
+  border: 1px solid rgba(251, 191, 36, 0.22);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  color: #fde68a;
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.payment-timer span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.payment-timer strong {
+  color: white;
+  font-size: 2rem;
+  letter-spacing: -0.04em;
+}
+
+.card-preview {
+  position: relative;
+  display: grid;
+  gap: 2rem;
+  min-height: 210px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 24px;
+  padding: 1.35rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.18), transparent 8rem),
+    linear-gradient(135deg, #7c3aed, #0891b2 58%, #0f172a);
+  box-shadow: 0 24px 50px rgba(6, 182, 212, 0.16);
+}
+
+.card-preview::after {
+  content: "";
+  position: absolute;
+  right: -3rem;
+  bottom: -4rem;
+  width: 13rem;
+  height: 13rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+
+.card-preview span,
+.card-preview strong,
+.card-preview small {
+  position: relative;
+  z-index: 1;
+}
+
+.card-preview span {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.card-preview strong {
+  color: white;
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  letter-spacing: 0.08em;
+}
+
+.card-preview div {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.card-preview small {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 700;
+}
+
+.checkout-feedback {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  color: #fecdd3;
+  background: rgba(225, 29, 72, 0.13);
+}
+
+.checkout-feedback.success {
+  color: #bbf7d0;
+  border-color: rgba(52, 211, 153, 0.24);
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.checkout-feedback strong {
+  color: white;
+}
+
+.checkout-feedback span {
+  color: inherit;
+}
+
+.checkout-result {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 1rem;
+  max-width: 720px;
 }
 
 .form-actions {
@@ -944,6 +1087,27 @@ label {
   padding: 1rem 1.5rem 1.45rem;
 }
 
+.reserve-actions {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.reserve-actions label {
+  grid-template-columns: auto minmax(110px, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.reserve-actions label span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.reserve-actions select {
+  min-height: 42px;
+  padding: 0.55rem 0.75rem;
+}
+
 .capacity-row {
   display: flex;
   align-items: center;
@@ -1119,7 +1283,8 @@ label {
   word-break: break-all;
 }
 
-.qr-mark {
+.qr-mark,
+.qr-button {
   width: 52px;
   height: 52px;
   flex: 0 0 auto;
@@ -1135,9 +1300,67 @@ label {
   opacity: 0.78;
 }
 
-.qr-mark:hover:not(:disabled) {
+.qr-button {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: white;
+  opacity: 1;
+}
+
+.qr-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.qr-mark:hover:not(:disabled),
+.qr-button:hover:not(:disabled) {
   transform: translateY(-2px) scale(1.02);
   border-color: rgba(6, 182, 212, 0.28);
+}
+
+.qr-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(3, 4, 7, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.qr-modal {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  width: min(480px, 100%);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.qr-modal h2 {
+  margin: 0;
+}
+
+.qr-modal img {
+  width: min(360px, 100%);
+  border-radius: 20px;
+  padding: 0.75rem;
+  background: white;
+}
+
+.qr-upload-box {
+  border: 1px dashed rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  background: rgba(139, 92, 246, 0.07);
+}
+
+.qr-upload-box input {
+  border-style: dashed;
+  cursor: pointer;
 }
 
 .ticket-list span {
@@ -1267,6 +1490,7 @@ label {
 @media (max-width: 980px) {
   .auth-layout,
   .auth-content,
+  .checkout-layout,
   .topbar-inner,
   .app-overview {
     grid-template-columns: 1fr;
@@ -1345,6 +1569,7 @@ label {
   }
 
   .event-toolbar,
+  .card-preview div,
   .form-row,
   .owned-event {
     grid-template-columns: 1fr;

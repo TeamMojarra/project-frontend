@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { formatDate } from "../utils/formatters";
 import { eventStatusLabel, eventTypeLabel, modalityLabel } from "../utils/labels";
 
@@ -5,8 +7,12 @@ export default function EventCard({ compact = false, event, user, onReserve }) {
   const isOwner = user?.id === event.created_by;
   const availableCapacity = Number(event.available_capacity || 0);
   const totalCapacity = Number(event.total_capacity || 0);
+  const maxPerPurchase = Math.max(1, Number(event.max_tickets_per_purchase || 1));
+  const reservationLimit = Math.min(availableCapacity, maxPerPurchase);
+  const [quantity, setQuantity] = useState(1);
   const capacityRatio = totalCapacity > 0 ? Math.max(0, Math.min(100, (availableCapacity / totalCapacity) * 100)) : 0;
   const canReserve = Boolean(user) && !isOwner && availableCapacity > 0 && event.status === "available";
+  const safeQuantity = Math.min(quantity, Math.max(1, reservationLimit));
 
   return (
     <article className={`event-card ${event.status} ${compact ? "compact" : ""}`}>
@@ -41,7 +47,7 @@ export default function EventCard({ compact = false, event, user, onReserve }) {
       <div className="event-card-footer">
         <div className="capacity-row">
           <span>{availableCapacity}/{totalCapacity} cupos</span>
-          <span>{Math.round(capacityRatio)}%</span>
+          <span>Máx. {maxPerPurchase} por compra</span>
         </div>
         <div
           aria-label={`${availableCapacity} de ${totalCapacity} cupos disponibles`}
@@ -56,9 +62,21 @@ export default function EventCard({ compact = false, event, user, onReserve }) {
         {isOwner ? (
           <button disabled type="button">Tu evento</button>
         ) : (
-          <button className="primary" disabled={!canReserve} onClick={() => onReserve(event.id)} type="button">
-            {user ? "Reservar cupo" : "Inicia sesión para reservar"}
-          </button>
+          <div className="reserve-actions">
+            {canReserve && reservationLimit > 1 && (
+              <label>
+                <span>Cantidad</span>
+                <select value={safeQuantity} onChange={(event) => setQuantity(Number(event.target.value))}>
+                  {Array.from({ length: reservationLimit }, (_, index) => index + 1).map((amount) => (
+                    <option key={amount} value={amount}>{amount} ticket{amount > 1 ? "s" : ""}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <button className="primary" disabled={!canReserve} onClick={() => onReserve(event.id, safeQuantity)} type="button">
+              {user ? `Reservar ${safeQuantity} cupo${safeQuantity > 1 ? "s" : ""}` : "Inicia sesión para reservar"}
+            </button>
+          </div>
         )}
       </div>
     </article>

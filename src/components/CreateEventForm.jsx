@@ -55,6 +55,15 @@ export default function CreateEventForm({ form, isEditing, onCancelEdit, onForm,
       />
       <Input label="Fin" type="datetime-local" value={form.end_datetime} onChange={(end_datetime) => onForm({ ...form, end_datetime })} required={false} />
       <Input helper="Debe ser mayor a cero." label="Capacidad" min="1" type="number" value={form.total_capacity} onChange={(total_capacity) => onForm({ ...form, total_capacity })} />
+      <Input
+        helper="Cantidad máxima de tickets que un usuario puede comprar en una sola reserva."
+        label="Límite por compra"
+        max={form.total_capacity}
+        min="1"
+        type="number"
+        value={form.max_tickets_per_purchase}
+        onChange={(max_tickets_per_purchase) => onForm({ ...form, max_tickets_per_purchase })}
+      />
       {isEditing && (
         <label>
           <span>Estado</span>

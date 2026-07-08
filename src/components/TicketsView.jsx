@@ -1,7 +1,12 @@
+import { useEffect, useState } from "react";
+import QRCode from "qrcode";
+
 import { formatDate } from "../utils/formatters";
 import { ticketStatusLabel } from "../utils/labels";
 
 export default function TicketsView({ reservations, tickets }) {
+  const [zoomTicket, setZoomTicket] = useState(null);
+
   return (
     <section className="panel view-panel">
       <div className="section-title">
@@ -15,7 +20,7 @@ export default function TicketsView({ reservations, tickets }) {
       <div className="stats-strip">
         <div>
           <strong>{reservations.length}</strong>
-          <span>Reservas</span>
+          <span>Reservas activas</span>
         </div>
         <div>
           <strong>{tickets.filter((ticket) => ticket.status === "active").length}</strong>
@@ -46,12 +51,7 @@ export default function TicketsView({ reservations, tickets }) {
                 <span className="ticket-label">CÓDIGO</span>
                 <div className="ticket-code">{ticket.ticket_code}</div>
               </div>
-              <button
-                aria-label={`Copiar código ${ticket.ticket_code}`}
-                className="qr-mark"
-                onClick={() => navigator.clipboard?.writeText(ticket.ticket_code)}
-                type="button"
-              />
+              <TicketQr ticket={ticket} onZoom={setZoomTicket} />
             </div>
             <small>Generado {formatDate(ticket.generated_at)}</small>
           </article>
@@ -63,6 +63,70 @@ export default function TicketsView({ reservations, tickets }) {
           </div>
         )}
       </div>
+
+      {zoomTicket && <QrModal ticket={zoomTicket} onClose={() => setZoomTicket(null)} />}
     </section>
   );
+}
+
+function TicketQr({ ticket, onZoom }) {
+  const qrUrl = useQrDataUrl(ticket.ticket_code, 160);
+
+  return (
+    <button
+      aria-label={`Ampliar QR del ticket ${ticket.ticket_code}`}
+      className="qr-button"
+      onClick={() => onZoom(ticket)}
+      type="button"
+    >
+      {qrUrl ? <img alt="" src={qrUrl} /> : <span />}
+    </button>
+  );
+}
+
+function QrModal({ ticket, onClose }) {
+  const qrUrl = useQrDataUrl(ticket.ticket_code, 360);
+
+  return (
+    <div className="qr-modal-backdrop" role="presentation" onClick={onClose}>
+      <section className="qr-modal panel" role="dialog" aria-modal="true" aria-label="QR ampliado" onClick={(event) => event.stopPropagation()}>
+        <div>
+          <p className="eyebrow">QR de acceso</p>
+          <h2>{ticket.event?.name || "Evento"}</h2>
+          <p className="view-copy">Muestra este QR o comparte el código para validar el acceso.</p>
+        </div>
+        {qrUrl && <img alt={`QR del ticket ${ticket.ticket_code}`} src={qrUrl} />}
+        <div className="ticket-code">{ticket.ticket_code}</div>
+        <div className="form-actions">
+          <button className="primary" onClick={() => navigator.clipboard?.writeText(ticket.ticket_code)} type="button">Copiar código</button>
+          <button onClick={onClose} type="button">Cerrar</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function useQrDataUrl(value, width) {
+  const [dataUrl, setDataUrl] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    QRCode.toDataURL(value, { margin: 1, width, color: { dark: "#020617", light: "#ffffff" } })
+      .then((url) => {
+        if (mounted) {
+          setDataUrl(url);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setDataUrl("");
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [value, width]);
+
+  return dataUrl;
 }

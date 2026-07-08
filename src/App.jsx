@@ -25,6 +25,7 @@ export default function App() {
   const [eventForm, setEventForm] = useState(EMPTY_EVENT);
   const [paymentForm, setPaymentForm] = useState(EMPTY_PAYMENT);
   const [checkout, setCheckout] = useState(null);
+  const [checkoutFeedback, setCheckoutFeedback] = useState(null);
   const [editingEventId, setEditingEventId] = useState(null);
   const [ticketCode, setTicketCode] = useState("");
   const [validationResult, setValidationResult] = useState(null);
@@ -148,12 +149,18 @@ export default function App() {
     }
   }
 
+  function goToView(view) {
+    setActiveView(view);
+    setNotice(null);
+  }
+
   function handleLogout() {
     clearToken();
     setUser(null);
     setTickets([]);
     setReservations([]);
     setCheckout(null);
+    setCheckoutFeedback(null);
     setPaymentForm(EMPTY_PAYMENT);
     setValidationResult(null);
     setNotice({ type: "success", text: "Sesión cerrada" });
@@ -203,6 +210,7 @@ export default function App() {
       start_datetime: toDateTimeLocal(event.start_datetime),
       end_datetime: toDateTimeLocal(event.end_datetime),
       total_capacity: event.total_capacity,
+      max_tickets_per_purchase: event.max_tickets_per_purchase || 1,
       status: event.status,
     });
   }
@@ -212,7 +220,7 @@ export default function App() {
     setEventForm(EMPTY_EVENT);
   }
 
-  async function reserveEvent(eventId) {
+  async function reserveEvent(eventId, quantity = 1) {
     if (!user) {
       setNotice({ type: "error", text: "Inicia sesión para reservar cupos." });
       return;
@@ -222,7 +230,7 @@ export default function App() {
     const reservation = await run(() =>
       apiRequest("/reservations", {
         method: "POST",
-        body: JSON.stringify({ event_id: eventId, quantity: 1 }),
+        body: JSON.stringify({ event_id: eventId, quantity }),
       }),
     );
 
@@ -232,6 +240,7 @@ export default function App() {
 
     const reservedEvent = latestEvents.find((event) => event.id === eventId) || reservation.event;
     setCheckout({ reservation, event: reservedEvent });
+    setCheckoutFeedback(null);
     setPaymentForm({ ...EMPTY_PAYMENT, holder_name: user.name });
     setActiveView("checkout");
     setNotice({ type: "success", text: "Reserva creada. Completa el pago simulado para generar tu ticket." });
@@ -259,19 +268,61 @@ export default function App() {
       setPaymentForm(EMPTY_PAYMENT);
       loadEvents();
       loadPrivateData();
-      setActiveView(paymentForm.result === "approved" ? "tickets" : "events");
+      if (paymentForm.result === "approved") {
+        setCheckoutFeedback(null);
+        setActiveView("tickets");
+      } else {
+        setCheckoutFeedback({
+          type: "error",
+          title: "Pago fallido",
+          text: "La reserva fue cancelada y los cupos volvieron a estar disponibles.",
+        });
+        setNotice({ type: "error", text: "Pago fallido. La reserva fue cancelada." });
+        setActiveView("checkout");
+      }
     }
   }
 
   function cancelCheckout() {
+    if (checkout?.reservation?.id) {
+      apiRequest(`/reservations/${checkout.reservation.id}`, { method: "DELETE" })
+        .then(() => {
+          loadEvents();
+          loadPrivateData();
+        })
+        .catch(() => {});
+    }
     setCheckout(null);
+    setCheckoutFeedback(null);
     setPaymentForm(EMPTY_PAYMENT);
     setActiveView("events");
   }
 
+  async function expireCheckout() {
+    if (!checkout?.reservation?.id) {
+      return;
+    }
+
+    await apiRequest(`/reservations/${checkout.reservation.id}`, { method: "DELETE" }).catch(() => null);
+    setCheckout(null);
+    setPaymentForm(EMPTY_PAYMENT);
+    setCheckoutFeedback({
+      type: "error",
+      title: "Tiempo agotado",
+      text: "La reserva se canceló porque no se completó el pago dentro del tiempo disponible.",
+    });
+    setNotice({ type: "error", text: "Tiempo agotado. La reserva fue cancelada." });
+    loadEvents();
+    loadPrivateData();
+  }
+
   async function validateTicket(event) {
     event.preventDefault();
-    const code = ticketCode.trim();
+    await validateTicketCode(ticketCode);
+  }
+
+  async function validateTicketCode(rawCode) {
+    const code = String(rawCode || "").trim();
     if (!code) {
       return;
     }
@@ -293,6 +344,7 @@ export default function App() {
     events,
     eventForm,
     checkout,
+    checkoutFeedback,
     editingEventId,
     myEvents,
     reservations,
@@ -301,6 +353,7 @@ export default function App() {
     paymentForm,
     onCancelEvent: cancelEvent,
     onCancelCheckout: cancelCheckout,
+    onCheckoutExpire: expireCheckout,
     onCancelEdit: cancelEditingEvent,
     onEditEvent: startEditingEvent,
     onEventForm: setEventForm,
@@ -310,6 +363,7 @@ export default function App() {
     onPaymentSubmit: payCheckout,
     onTicketCode: setTicketCode,
     onValidateTicket: validateTicket,
+    onValidateTicketCode: validateTicketCode,
     ticketCode,
     validationResult,
   });
@@ -358,7 +412,7 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <Header user={user} activeView={activeView} onView={setActiveView} onLogout={handleLogout} />
+      <Header user={user} activeView={activeView} onView={goToView} onLogout={handleLogout} />
 
       <Notice notice={notice} loading={loading} />
 
@@ -404,6 +458,7 @@ function buildEventPayload(form, includeStatus) {
     start_datetime: form.start_datetime ? new Date(form.start_datetime).toISOString() : null,
     end_datetime: form.end_datetime ? new Date(form.end_datetime).toISOString() : null,
     total_capacity: Number(form.total_capacity),
+    max_tickets_per_purchase: Number(form.max_tickets_per_purchase),
     ...(includeStatus ? { status: form.status } : {}),
   };
 }
@@ -413,6 +468,7 @@ function getMainContent({
   events,
   eventForm,
   checkout,
+  checkoutFeedback,
   editingEventId,
   myEvents,
   reservations,
@@ -420,6 +476,7 @@ function getMainContent({
   user,
   paymentForm,
   onCancelCheckout,
+  onCheckoutExpire,
   onCancelEdit,
   onCancelEvent,
   onEditEvent,
@@ -430,6 +487,7 @@ function getMainContent({
   onPaymentSubmit,
   onTicketCode,
   onValidateTicket,
+  onValidateTicketCode,
   ticketCode,
   validationResult,
 }) {
@@ -449,8 +507,11 @@ function getMainContent({
     return (
       <CheckoutForm
         checkout={checkout}
+        feedback={checkoutFeedback}
         form={paymentForm}
+        key={checkout?.reservation?.id || checkoutFeedback?.title || "checkout"}
         onCancel={onCancelCheckout}
+        onExpire={onCheckoutExpire}
         onForm={onPaymentForm}
         onSubmit={onPaymentSubmit}
       />
@@ -466,7 +527,7 @@ function getMainContent({
   }
 
   if (activeView === "validate" && user) {
-    return <ValidatorForm result={validationResult} ticketCode={ticketCode} onTicketCode={onTicketCode} onSubmit={onValidateTicket} />;
+    return <ValidatorForm result={validationResult} ticketCode={ticketCode} onScan={onValidateTicketCode} onTicketCode={onTicketCode} onSubmit={onValidateTicket} />;
   }
 
   return <EventsSection events={events} user={user} onReserve={onReserve} />;

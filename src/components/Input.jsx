@@ -5,6 +5,7 @@ export default function Input({
   helper,
   label,
   min,
+  max,
   onChange,
   placeholder = "",
   required = true,
@@ -22,6 +23,7 @@ export default function Input({
         autoComplete={autoComplete}
         id={inputId}
         min={min}
+        max={max}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         required={required}
