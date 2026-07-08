@@ -1191,6 +1191,54 @@ label {
   background: var(--surface-muted);
 }
 
+.owned-reservations {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 0.9rem;
+}
+
+.owned-reservation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.owned-reservation div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.owned-reservation span,
+.owned-reservation small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owned-reservation span {
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.owned-reservation small {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.owned-reservation button {
+  min-height: 36px;
+  padding: 0.45rem 0.7rem;
+}
+
 .owned-event p {
   margin: 0.25rem 0 0;
   color: var(--muted);
@@ -1613,7 +1661,8 @@ label {
   .event-toolbar,
   .card-preview div,
   .form-row,
-  .owned-event {
+  .owned-event,
+  .owned-reservation {
     grid-template-columns: 1fr;
   }
 

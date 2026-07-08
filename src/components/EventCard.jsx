@@ -13,8 +13,9 @@ export default function EventCard({ compact = false, event, user, onReserve }) {
   const [selectedSlotId, setSelectedSlotId] = useState(event.service_slots?.[0]?.id || "");
   const isService = event.event_type === "service";
   const serviceSlots = event.service_slots || [];
+  const selectedSlot = serviceSlots.find((slot) => slot.id === Number(selectedSlotId)) || serviceSlots[0];
   const capacityRatio = totalCapacity > 0 ? Math.max(0, Math.min(100, (availableCapacity / totalCapacity) * 100)) : 0;
-  const canReserve = Boolean(user) && !isOwner && availableCapacity > 0 && event.status === "available" && (!isService || selectedSlotId);
+  const canReserve = Boolean(user) && !isOwner && availableCapacity > 0 && event.status === "available" && (!isService || selectedSlot);
   const safeQuantity = Math.min(quantity, Math.max(1, reservationLimit));
   const reserveQuantity = isService ? 1 : safeQuantity;
 
@@ -36,7 +37,7 @@ export default function EventCard({ compact = false, event, user, onReserve }) {
         <div className="event-meta-list">
           <div className="event-meta-item">
             <span className="meta-icon" aria-hidden="true" />
-            <span>{isService ? `${serviceSlots.length} horarios libres` : formatDate(event.start_datetime)}</span>
+            <span>{isService ? (event.status === "available" ? `${serviceSlots.length} horarios libres` : "Servicio no disponible") : formatDate(event.start_datetime)}</span>
           </div>
           <div className="event-meta-item">
             <span className="meta-icon" aria-hidden="true" />
@@ -67,10 +68,10 @@ export default function EventCard({ compact = false, event, user, onReserve }) {
           <button disabled type="button">Tu evento</button>
         ) : (
           <div className="reserve-actions">
-            {isService && serviceSlots.length > 0 && (
+            {isService && event.status === "available" && serviceSlots.length > 0 && (
               <label>
                 <span>Horario</span>
-                <select value={selectedSlotId} onChange={(event) => setSelectedSlotId(Number(event.target.value))}>
+                <select value={selectedSlot?.id || ""} onChange={(event) => setSelectedSlotId(Number(event.target.value))}>
                   {serviceSlots.map((slot) => (
                     <option key={slot.id} value={slot.id}>{formatSlot(slot.starts_at)}</option>
                   ))}
@@ -87,7 +88,7 @@ export default function EventCard({ compact = false, event, user, onReserve }) {
                 </select>
               </label>
             )}
-            <button className="primary" disabled={!canReserve} onClick={() => onReserve(event.id, reserveQuantity, isService ? selectedSlotId : null)} type="button">
+            <button className="primary" disabled={!canReserve} onClick={() => onReserve(event.id, reserveQuantity, isService ? selectedSlot.id : null)} type="button">
               {user ? (isService ? "Reservar turno" : `Reservar ${safeQuantity} cupo${safeQuantity > 1 ? "s" : ""}`) : "Inicia sesión para reservar"}
             </button>
           </div>

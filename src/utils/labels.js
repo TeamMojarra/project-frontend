@@ -9,6 +9,7 @@ const TICKET_STATUS_LABELS = {
   active: "Activo",
   used: "Usado",
   rejected: "Rechazado",
+  cancelled: "Cancelado",
 };
 
 const EVENT_TYPE_LABELS = {

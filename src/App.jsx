@@ -20,6 +20,7 @@ export default function App() {
   const [events, setEvents] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [reservations, setReservations] = useState([]);
+  const [ownerReservations, setOwnerReservations] = useState({});
   const [loginForm, setLoginForm] = useState(EMPTY_LOGIN);
   const [registerForm, setRegisterForm] = useState(EMPTY_REGISTER);
   const [eventForm, setEventForm] = useState(EMPTY_EVENT);
@@ -47,6 +48,12 @@ export default function App() {
     }
   });
 
+  const refreshOwnerReservations = useEffectEvent(() => {
+    if (user && activeView === "my-events") {
+      loadOwnerReservations();
+    }
+  });
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -59,6 +66,10 @@ export default function App() {
     window.addEventListener("focus", refreshOnFocus);
     return () => window.removeEventListener("focus", refreshOnFocus);
   }, []);
+
+  useEffect(() => {
+    refreshOwnerReservations();
+  }, [activeView, events, user]);
 
   async function run(action, successMessage) {
     setLoading(true);
@@ -89,7 +100,7 @@ export default function App() {
   }
 
   async function loadEvents() {
-    const data = await run(() => apiRequest("/events"));
+    const data = await run(() => apiRequest("/events?include_expired=true"));
     let loadedEvents = [];
     if (data) {
       loadedEvents = await Promise.all(
@@ -113,6 +124,22 @@ export default function App() {
     ]);
     setTickets(ticketData);
     setReservations(reservationData);
+  }
+
+  async function loadOwnerReservations(sourceEvents = events) {
+    if (!user) {
+      setOwnerReservations({});
+      return;
+    }
+
+    const ownedEvents = sourceEvents.filter((event) => event.created_by === user.id);
+    const entries = await Promise.all(
+      ownedEvents.map(async (event) => [
+        event.id,
+        await apiRequest(`/events/${event.id}/reservations`).catch(() => []),
+      ]),
+    );
+    setOwnerReservations(Object.fromEntries(entries));
   }
 
   async function handleLogin(event) {
@@ -169,6 +196,7 @@ export default function App() {
     setUser(null);
     setTickets([]);
     setReservations([]);
+    setOwnerReservations({});
     setCheckout(null);
     setCheckoutFeedback(null);
     setPaymentForm(EMPTY_PAYMENT);
@@ -207,6 +235,19 @@ export default function App() {
 
     if (data) {
       loadEvents();
+    }
+  }
+
+  async function cancelOwnedReservation(reservationId) {
+    const data = await run(
+      () => apiRequest(`/reservations/${reservationId}/owner-cancel`, { method: "POST" }),
+      "Reserva cancelada. Revisa el reembolso con el cliente.",
+    );
+
+    if (data) {
+      const loadedEvents = await loadEvents();
+      loadOwnerReservations(loadedEvents);
+      loadPrivateData();
     }
   }
 
@@ -386,6 +427,7 @@ export default function App() {
     checkoutFeedback,
     editingEventId,
     myEvents,
+    ownerReservations,
     reservations,
     tickets,
     user,
@@ -393,6 +435,7 @@ export default function App() {
     onCancelEvent: cancelEvent,
     onCancelCheckout: cancelCheckout,
     onCheckoutExpire: expireCheckout,
+    onCancelOwnedReservation: cancelOwnedReservation,
     onCancelEdit: cancelEditingEvent,
     onEditEvent: startEditingEvent,
     onEventForm: setEventForm,
@@ -511,12 +554,14 @@ function getMainContent({
   checkoutFeedback,
   editingEventId,
   myEvents,
+  ownerReservations,
   reservations,
   tickets,
   user,
   paymentForm,
   onCancelCheckout,
   onCheckoutExpire,
+  onCancelOwnedReservation,
   onCancelEdit,
   onCancelEvent,
   onEditEvent,
@@ -559,7 +604,15 @@ function getMainContent({
   }
 
   if (activeView === "my-events" && user) {
-    return <MyEvents events={myEvents} onCancel={onCancelEvent} onEdit={onEditEvent} />;
+    return (
+      <MyEvents
+        events={myEvents}
+        reservationsByEvent={ownerReservations}
+        onCancel={onCancelEvent}
+        onCancelReservation={onCancelOwnedReservation}
+        onEdit={onEditEvent}
+      />
+    );
   }
 
   if (activeView === "tickets" && user) {
