@@ -6,7 +6,7 @@ import Input from "./Input";
 const PAYMENT_SECONDS = 300;
 
 export default function CheckoutForm({ checkout, feedback, form, onCancel, onExpire, onForm, onSubmit }) {
-  const [secondsLeft, setSecondsLeft] = useState(PAYMENT_SECONDS);
+  const [secondsLeft, setSecondsLeft] = useState(() => getSecondsLeft(checkout));
   const handleExpire = useEffectEvent(() => {
     onExpire();
   });
@@ -16,16 +16,29 @@ export default function CheckoutForm({ checkout, feedback, form, onCancel, onExp
       return undefined;
     }
 
-    const interval = window.setInterval(() => {
-      setSecondsLeft((current) => {
-        if (current <= 1) {
-          window.clearInterval(interval);
+    let expired = false;
+    let interval;
+    const tick = () => {
+      setSecondsLeft(() => {
+        const current = getSecondsLeft(checkout);
+        if (current <= 0) {
+          if (!expired) {
+            expired = true;
+            window.clearInterval(interval);
+            handleExpire();
+          }
+          return 0;
+        }
+        if (current <= 1 && !expired) {
+          expired = true;
           handleExpire();
           return 0;
         }
-        return current - 1;
+        return current;
       });
-    }, 1000);
+    };
+    tick();
+    interval = window.setInterval(tick, 1000);
 
     return () => window.clearInterval(interval);
   }, [checkout]);
@@ -126,6 +139,20 @@ export default function CheckoutForm({ checkout, feedback, form, onCancel, onExp
       </form>
     </section>
   );
+}
+
+function getSecondsLeft(checkout) {
+  if (!checkout?.reservation?.created_at) {
+    return PAYMENT_SECONDS;
+  }
+
+  const createdAt = new Date(checkout.reservation.created_at).getTime();
+  if (Number.isNaN(createdAt)) {
+    return PAYMENT_SECONDS;
+  }
+
+  const elapsedSeconds = Math.floor((Date.now() - createdAt) / 1000);
+  return Math.max(0, PAYMENT_SECONDS - elapsedSeconds);
 }
 
 function CheckoutFeedback({ feedback, onCancel }) {

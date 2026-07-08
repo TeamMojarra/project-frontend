@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { formatDate, formatMoney, formatSlot } from "../utils/formatters";
 import { eventStatusLabel } from "../utils/labels";
 
@@ -9,6 +11,8 @@ const RESERVATION_STATUS_LABELS = {
 };
 
 export default function MyEvents({ events, reservationsByEvent = {}, onCancel, onCancelReservation, onEdit }) {
+  const [openEventId, setOpenEventId] = useState(null);
+
   function confirmCancel(event) {
     const shouldCancel = window.confirm(`¿Cancelar "${event.name}"? Esta acción no se puede deshacer.`);
     if (shouldCancel) {
@@ -35,6 +39,8 @@ export default function MyEvents({ events, reservationsByEvent = {}, onCancel, o
       </div>
       {events.map((event) => {
         const reservations = reservationsByEvent[event.id] || [];
+        const activeReservations = reservations.filter((reservation) => ["pending_payment", "confirmed"].includes(reservation.status)).length;
+        const isOpen = openEventId === event.id;
         return (
           <div className="owned-event" key={event.id}>
             <div>
@@ -43,9 +49,12 @@ export default function MyEvents({ events, reservationsByEvent = {}, onCancel, o
             </div>
             <div className="event-actions">
               <button onClick={() => onEdit(event)} type="button">Editar</button>
+              <button onClick={() => setOpenEventId(isOpen ? null : event.id)} type="button">
+                {isOpen ? "Ocultar reservas" : `Ver reservas (${activeReservations})`}
+              </button>
               <button className="danger" onClick={() => confirmCancel(event)} type="button">Cancelar</button>
             </div>
-            <div className="owned-reservations">
+            {isOpen && <div className="owned-reservations">
               <strong>Reservas</strong>
               {reservations.length === 0 && <span className="muted">Sin reservas todavía.</span>}
               {reservations.map((reservation) => {
@@ -66,7 +75,7 @@ export default function MyEvents({ events, reservationsByEvent = {}, onCancel, o
                   </div>
                 );
               })}
-            </div>
+            </div>}
           </div>
         );
       })}
