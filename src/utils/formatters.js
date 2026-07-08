@@ -24,6 +24,33 @@ export function formatDate(value) {
   }).format(date);
 }
 
+export function formatMoney(value) {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
+}
+
+export function formatSlot(value) {
+  if (!value) {
+    return "Horario por confirmar";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Horario inválido";
+  }
+
+  return new Intl.DateTimeFormat("es-CO", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 
 export function toDateTimeLocal(value) {
   if (!value) {

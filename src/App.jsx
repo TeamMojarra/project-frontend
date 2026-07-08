@@ -90,10 +90,20 @@ export default function App() {
 
   async function loadEvents() {
     const data = await run(() => apiRequest("/events"));
+    let loadedEvents = [];
     if (data) {
-      setEvents(data);
+      loadedEvents = await Promise.all(
+        data.map(async (event) => {
+          if (event.event_type !== "service") {
+            return event;
+          }
+          const slots = await apiRequest(`/events/${event.id}/slots`).catch(() => []);
+          return { ...event, service_slots: slots };
+        }),
+      );
+      setEvents(loadedEvents);
     }
-    return data || [];
+    return loadedEvents;
   }
 
   async function loadPrivateData() {
@@ -179,6 +189,9 @@ export default function App() {
     );
 
     if (data) {
+      if (eventForm.event_type === "service") {
+        await generateServiceSlots(data.id);
+      }
       setEventForm(EMPTY_EVENT);
       setEditingEventId(null);
       loadEvents();
@@ -201,12 +214,14 @@ export default function App() {
     setEditingEventId(event.id);
     setActiveView("create");
     setEventForm({
+      ...EMPTY_EVENT,
       name: event.name,
       description: event.description || "",
       event_type: event.event_type,
       modality: event.modality,
       location: event.location || "",
       image_url: event.image_url || "",
+      price: event.price || 0,
       start_datetime: toDateTimeLocal(event.start_datetime),
       end_datetime: toDateTimeLocal(event.end_datetime),
       total_capacity: event.total_capacity,
@@ -220,7 +235,7 @@ export default function App() {
     setEventForm(EMPTY_EVENT);
   }
 
-  async function reserveEvent(eventId, quantity = 1) {
+  async function reserveEvent(eventId, quantity = 1, serviceSlotId = null) {
     if (!user) {
       setNotice({ type: "error", text: "Inicia sesión para reservar cupos." });
       return;
@@ -230,7 +245,7 @@ export default function App() {
     const reservation = await run(() =>
       apiRequest("/reservations", {
         method: "POST",
-        body: JSON.stringify({ event_id: eventId, quantity }),
+        body: JSON.stringify({ event_id: eventId, quantity, service_slot_id: serviceSlotId }),
       }),
     );
 
@@ -314,6 +329,30 @@ export default function App() {
     setNotice({ type: "error", text: "Tiempo agotado. La reserva fue cancelada." });
     loadEvents();
     loadPrivateData();
+  }
+
+  async function generateServiceSlots(eventId) {
+    const payload = {
+      start_date: eventForm.schedule_start_date,
+      end_date: eventForm.schedule_end_date,
+      weekdays: eventForm.schedule_weekdays,
+      start_time: `${eventForm.schedule_start_time}:00`,
+      end_time: `${eventForm.schedule_end_time}:00`,
+      slot_minutes: Number(eventForm.slot_minutes),
+    };
+
+    if (!payload.start_date || !payload.end_date || payload.weekdays.length === 0) {
+      return null;
+    }
+
+    return run(
+      () =>
+        apiRequest(`/events/${eventId}/slots/generate`, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }),
+      "Agenda de horarios creada",
+    );
   }
 
   async function validateTicket(event) {
@@ -455,6 +494,7 @@ function buildEventPayload(form, includeStatus) {
     event_type: form.event_type,
     modality: form.modality,
     location: form.location,
+    price: Number(form.price),
     start_datetime: form.start_datetime ? new Date(form.start_datetime).toISOString() : null,
     end_datetime: form.end_datetime ? new Date(form.end_datetime).toISOString() : null,
     total_capacity: Number(form.total_capacity),

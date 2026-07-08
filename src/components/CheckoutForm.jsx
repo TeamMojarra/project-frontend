@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useState } from "react";
 
+import { formatMoney, formatSlot } from "../utils/formatters";
 import Input from "./Input";
 
 const PAYMENT_SECONDS = 300;
@@ -35,6 +36,9 @@ export default function CheckoutForm({ checkout, feedback, form, onCancel, onExp
 
   const eventName = checkout.event?.name || checkout.reservation?.event?.name || "Evento";
   const quantity = checkout.reservation?.quantity || 1;
+  const serviceSlot = checkout.reservation?.service_slot;
+  const unitPrice = Number(checkout.event?.price || checkout.reservation?.event?.price || 0);
+  const total = unitPrice * quantity;
   const lastDigits = form.card_number.replace(/\D/g, "").slice(-4).padStart(4, "•");
   const minutes = Math.floor(secondsLeft / 60).toString().padStart(2, "0");
   const seconds = (secondsLeft % 60).toString().padStart(2, "0");
@@ -46,8 +50,10 @@ export default function CheckoutForm({ checkout, feedback, form, onCancel, onExp
         <h2>{eventName}</h2>
         <div className="checkout-summary">
           <span>Reserva #{checkout.reservation.id}</span>
-          <strong>{quantity} cupo{quantity > 1 ? "s" : ""}</strong>
+          <strong>{formatMoney(total)}</strong>
         </div>
+        {serviceSlot && <p className="slot-summary">Turno: <strong>{formatSlot(serviceSlot.starts_at)}</strong></p>}
+        <p className="slot-summary">{quantity} x {formatMoney(unitPrice)}</p>
         <div className="payment-timer" aria-live="polite">
           <span>Tiempo para pagar</span>
           <strong>{minutes}:{seconds}</strong>
